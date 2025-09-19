@@ -235,8 +235,16 @@ def initialize_session_state():
     if 'cv_score' not in st.session_state:
         st.session_state.cv_score = None
     if 'api_key_set' not in st.session_state:
-        # Check if API key is available in environment variables
-        api_key = os.getenv("OPENAI_API_KEY")
+        # Check if API key is available in Streamlit secrets (for cloud deployment) or environment variables (for local)
+        try:
+            api_key = st.secrets.get("OPENAI_API_KEY", None)
+            if not api_key:
+                # Fallback to environment variables for local development
+                api_key = os.getenv("OPENAI_API_KEY")
+        except Exception:
+            # If secrets are not available (local development), use environment variables
+            api_key = os.getenv("OPENAI_API_KEY")
+        
         st.session_state.api_key_set = bool(api_key and api_key != "your_openai_api_key_here")
 
 def main():

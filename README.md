@@ -30,7 +30,9 @@ A Streamlit application that helps job applicants create tailored cover letters 
    pip install -r requirements.txt
    ```
 
-3. **Set up environment variables** (Required):
+3. **Set up API key**:
+
+   **For Local Development:**
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
@@ -40,12 +42,32 @@ A Streamlit application that helps job applicants create tailored cover letters 
      OPENAI_API_KEY=your_actual_api_key_here
      ```
 
+   **For Streamlit Cloud Deployment:**
+   - The app will automatically use Streamlit secrets
+   - Configure your `OPENAI_API_KEY` in the Streamlit Cloud secrets management UI
+   - No `.env` file needed for cloud deployment
+
 4. **Run the application**:
    ```bash
    streamlit run app.py
    ```
 
 5. **Open your browser** and navigate to `http://localhost:8501`
+
+## Deployment on Streamlit Cloud 🚀
+
+To deploy this app on Streamlit Cloud:
+
+1. **Push your code** to a GitHub repository
+2. **Connect to Streamlit Cloud** at [share.streamlit.io](https://share.streamlit.io)
+3. **Deploy your app** by connecting your GitHub repository
+4. **Configure secrets**: In the Streamlit Cloud dashboard, go to your app settings and add:
+   ```
+   OPENAI_API_KEY = "your_actual_api_key_here"
+   ```
+5. **Your app will be live** and accessible via the provided URL
+
+The app automatically detects whether it's running locally or on Streamlit Cloud and uses the appropriate method to retrieve the API key.
 
 ## How to Use 📋
 

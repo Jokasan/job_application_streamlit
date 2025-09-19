@@ -21,6 +21,16 @@ class CoverLetterAgent:
         """
         if api_key:
             os.environ["OPENAI_API_KEY"] = api_key
+        else:
+            # Try to get API key from Streamlit secrets (for cloud deployment) or environment variables
+            try:
+                import streamlit as st
+                api_key = st.secrets.get("OPENAI_API_KEY", None)
+                if api_key:
+                    os.environ["OPENAI_API_KEY"] = api_key
+            except Exception:
+                # Streamlit secrets not available, rely on environment variables
+                pass
         
         # Initialize the OpenAI chat model
         self.llm = ChatOpenAI(
