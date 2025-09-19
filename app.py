@@ -232,8 +232,12 @@ def initialize_session_state():
         st.session_state.job_description = ""
     if 'cover_letter' not in st.session_state:
         st.session_state.cover_letter = ""
+    if 'cv_score' not in st.session_state:
+        st.session_state.cv_score = None
     if 'api_key_set' not in st.session_state:
-        st.session_state.api_key_set = False
+        # Check if API key is available in environment variables
+        api_key = os.getenv("OPENAI_API_KEY")
+        st.session_state.api_key_set = bool(api_key and api_key != "your_openai_api_key_here")
 
 def main():
     """Main application function."""
@@ -245,27 +249,8 @@ def main():
     st.markdown('<h1 class="main-header">✨ CoverCraft AI ✨🚀</h1>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; font-size: 1.3em; background: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; margin-bottom: 2rem;">🎯 Transform your job search with AI-powered cover letters! 🎯</p>', unsafe_allow_html=True)
     
-    # Sidebar for API key configuration
+    # Sidebar for configuration
     with st.sidebar:
-        st.markdown("### 🔑✨ Setup & Configuration ✨🔑")
-        
-        # API Key input
-        api_key = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            help="Enter your OpenAI API key. Get one at https://platform.openai.com/api-keys",
-            placeholder="sk-..."
-        )
-        
-        if api_key:
-            st.session_state.api_key_set = True
-            os.environ["OPENAI_API_KEY"] = api_key
-            st.success("✅ API Key configured!")
-        else:
-            st.session_state.api_key_set = False
-            st.warning("⚠️ Please enter your OpenAI API key to continue.")
-        
-        st.markdown("---")
         st.markdown("### 🎨⚙️ AI Magic Settings ⚙️🎨")
         
         # Temperature slider
@@ -302,15 +287,41 @@ def main():
         st.markdown("---")
         st.markdown("### 📋🌟 How to Get Started 🌟📋")
         st.markdown("""
-        1. **Enter your OpenAI API key** above
-        2. **Adjust AI settings** (creativity level and tone)
-        3. **Upload your CV** as a PDF file
-        4. **Paste the job description** in the text area
-        5. **Click 'Generate Cover Letter'** to create a tailored cover letter
+        1. **Adjust AI settings** (creativity level and tone)
+        2. **Upload your CV** as a PDF file
+        3. **Paste the job description** in the text area
+        4. **Click 'Generate Cover Letter'** to create a tailored cover letter
         """)
         
         st.markdown("---")
-        st.markdown("### 💡✨ About CoverCraft AI ✨💡")
+        st.markdown("### ✨ Quick CV Analysis ✨📊")
+        
+        # Quick scoring button
+        if st.button("🎯 Analyze CV Match", help="Get a quick match score without generating a cover letter", use_container_width=True):
+            if st.session_state.api_key_set and st.session_state.cv_text and st.session_state.job_description:
+                with st.spinner("📊 Analyzing match... "):
+                    try:
+                        agent = CoverLetterAgent(temperature=temperature)
+                        scoring_result = agent.score_cv_match(
+                            st.session_state.cv_text,
+                            st.session_state.job_description
+                        )
+                        st.session_state.cv_score = scoring_result
+                        st.success(f"✅ Analysis complete! Score: {scoring_result['stars']}")
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+            else:
+                missing = []
+                if not st.session_state.api_key_set:
+                    missing.append("API key")
+                if not st.session_state.cv_text:
+                    missing.append("CV upload")
+                if not st.session_state.job_description:
+                    missing.append("job description")
+                st.warning(f"⚠️ Please provide: {', '.join(missing)}")
+        
+        st.markdown("---")
+        st.markdown("### ✨ About CoverCraft AI ✨💡")
         st.markdown("""
         🚀 Welcome to the future of job applications! This magical app uses cutting-edge AI to analyze your CV and dream job description, then crafts a personalized cover letter that makes you shine brighter than a diamond! ✨💎
         """)
@@ -369,18 +380,65 @@ def main():
             word_count = len(job_description.split())
             st.info(f"📊 Word count: {word_count}")
     
+    # Display CV Match Score (if available)
+    if st.session_state.cv_score:
+        st.markdown('<h2 class="section-header">📊✨ CV Match Analysis ✨📊</h2>', unsafe_allow_html=True)
+        
+        score_data = st.session_state.cv_score
+        
+        # Display score prominently
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(f"""
+            <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; margin: 1rem 0;">
+                <h1 style="color: white; font-size: 3rem; margin: 0;">{score_data['stars']}</h1>
+                <h2 style="color: white; margin: 0.5rem 0;">Match Score: {score_data['score']}/5</h2>
+                <p style="color: white; font-size: 1.2rem; margin: 0;">
+                    {'Perfect Match!' if score_data['score'] == 5 else 
+                     'Excellent Match!' if score_data['score'] == 4 else
+                     'Good Match!' if score_data['score'] == 3 else
+                     'Fair Match' if score_data['score'] == 2 else
+                     'Needs Improvement'}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Detailed analysis in expandable sections
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            with st.expander("📈 Strengths & Analysis", expanded=True):
+                st.markdown("**🎯 Analysis:**")
+                st.write(score_data['analysis'])
+                st.markdown("**💪 Strengths:**")
+                st.write(score_data['strengths'])
+        
+        with col2:
+            with st.expander("📋 Areas for Improvement", expanded=True):
+                st.markdown("**🔍 Gaps Identified:**")
+                st.write(score_data['gaps'])
+                st.markdown("**🚀 Recommendations:**")
+                st.write(score_data['recommendations'])
+        
+        # Re-analyze button
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            if st.button("🔄 Re-analyze Match", help="Generate a new CV match analysis"):
+                if st.session_state.api_key_set and st.session_state.cv_text and st.session_state.job_description:
+                    with st.spinner("📊 Re-analyzing CV-Job match... "):
+                        try:
+                            agent = CoverLetterAgent(temperature=temperature)
+                            scoring_result = agent.score_cv_match(
+                                st.session_state.cv_text,
+                                st.session_state.job_description
+                            )
+                            st.session_state.cv_score = scoring_result
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error re-analyzing: {str(e)}")
+    
     # Cover letter generation section
     st.markdown('<h2 class="section-header">🎉✨ Craft Your Perfect Cover Letter ✨🎉</h2>', unsafe_allow_html=True)
-    
-    # Show current settings
-    if st.session_state.api_key_set:
-        st.markdown('<div class="info-box">', unsafe_allow_html=True)
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            st.markdown(f"**🌡️ Creativity Level:** {temperature}")
-        with col2:
-            st.markdown(f"**🎯 Tone:** {selected_tone}")
-        st.markdown('</div>', unsafe_allow_html=True)
     
     # Check if all requirements are met
     requirements_met = (
@@ -469,7 +527,7 @@ def main():
                 file_name="cover_letter.txt",
                 mime="text/plain",
                 use_container_width=True,
-                help="Download as a plain text file"
+                help="Download as a plain text file" 
             )
         
         with col3:

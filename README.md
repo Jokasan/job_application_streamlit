@@ -30,7 +30,7 @@ A Streamlit application that helps job applicants create tailored cover letters 
    pip install -r requirements.txt
    ```
 
-3. **Set up environment variables**:
+3. **Set up environment variables** (Required):
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
@@ -39,8 +39,6 @@ A Streamlit application that helps job applicants create tailored cover letters 
      ```
      OPENAI_API_KEY=your_actual_api_key_here
      ```
-   
-   Alternatively, you can enter your API key directly in the app's sidebar.
 
 4. **Run the application**:
    ```bash
